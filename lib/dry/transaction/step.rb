@@ -17,14 +17,16 @@ module Dry
       attr_reader :operation
       attr_reader :options
       attr_reader :call_args
+      attr_reader :step_block
 
-      def initialize(step_adapter, step_name, operation_name, operation, options, call_args = [])
+      def initialize(step_adapter, step_name, operation_name, operation, options, call_args = [], &block)
         @step_adapter = step_adapter
         @step_name = step_name
         @operation_name = operation_name
         @operation = operation
         @options = options
         @call_args = call_args
+        @step_block = block
       end
 
       def with(operation: UNDEFINED, call_args: UNDEFINED)
@@ -39,6 +41,7 @@ module Dry
           new_operation,
           options,
           new_call_args,
+          &step_block
         )
       end
 
@@ -57,11 +60,9 @@ module Dry
       end
 
       def call_operation(*input)
-        if arity.zero?
-          operation.call
-        else
-          operation.call(*input)
-        end
+        params = arity.zero? ? [step_use_case] : input + [step_use_case]
+
+        operation.call(*params.compact)
       end
 
       def arity
@@ -71,6 +72,16 @@ module Dry
         else
           operation.method(:call).arity
         end
+      end
+
+      private
+
+      def step_use_case
+        return if step_block.nil?
+
+        klass = Class.new(operation.owner)
+        klass.instance_exec(&step_block)
+        klass
       end
     end
   end

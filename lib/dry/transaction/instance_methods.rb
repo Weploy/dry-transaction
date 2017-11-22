@@ -98,7 +98,7 @@ module Dry
       def assert_step_arity
         steps.each do |step|
           num_args_required = step.arity >= 0 ? step.arity : ~step.arity
-          num_args_supplied = step.call_args.length + 1 # add 1 for main `input`
+          num_args_supplied = step.call_args.length + 1 + (step.step_block ? 1 : 0) # add 1 for main `input`
 
           if num_args_required > num_args_supplied
             raise ArgumentError, "not enough arguments supplied for step +#{step.step_name}+"
